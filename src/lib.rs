@@ -160,6 +160,13 @@ impl DerefMut for String {
     }
 }
 
+impl std::fmt::Write for String {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        self.push_str(s);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rb_sys_test_helpers::ruby_test;
@@ -228,6 +235,14 @@ mod tests {
         assert_eq!(s.len(), 4);
         assert_eq!(s.as_str(), "abcd");
         drop(s);
+    }
+
+    #[ruby_test]
+    fn test_write() {
+        let mut s = super::String::new();
+        std::fmt::Write::write_str(&mut s, "abc").unwrap();
+        assert_eq!(s.len(), 3);
+        assert_eq!(s.as_str(), "abc");
     }
 
     #[ruby_test]
