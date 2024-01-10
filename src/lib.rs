@@ -12,9 +12,7 @@ unsafe impl allocator_api2::alloc::Allocator for RubyAllocator {
         let ptr = unsafe {
             rb_sys::ruby_xmalloc(
                 layout
-                    .size()
-                    .try_into()
-                    .map_err(|_| allocator_api2::alloc::AllocError)?,
+                    .size().try_into().map_err(|_| allocator_api2::alloc::AllocError)?
             )
         };
         Ok(std::ptr::NonNull::slice_from_raw_parts(
@@ -24,7 +22,7 @@ unsafe impl allocator_api2::alloc::Allocator for RubyAllocator {
     }
 
     unsafe fn deallocate(&self, ptr: std::ptr::NonNull<u8>, _: std::alloc::Layout) {
-        rb_sys::ruby_xfree(ptr.as_ptr() as *mut std::ffi::c_void);
+        rb_sys::ruby_xfree(ptr.as_ptr() as *mut libc::c_void);
     }
 }
 
@@ -164,10 +162,78 @@ impl DerefMut for String {
 
 #[cfg(test)]
 mod tests {
-    #[test]
+    use rb_sys_test_helpers::ruby_test;
+
+    #[ruby_test]
     fn test_empty() {
         let s = super::String::new();
         assert_eq!(s.len(), 0);
         assert_eq!(s.as_str(), "");
+    }
+
+    #[ruby_test]
+    fn test_push() {
+        let mut s = super::String::new();
+        s.push('a');
+        s.push('b');
+        s.push('c');
+        assert_eq!(s.len(), 3);
+        assert_eq!(s.as_str(), "abc");
+    }
+
+    #[ruby_test]
+    fn test_push_str() {
+        let mut s = super::String::new();
+        s.push_str("abc");
+        assert_eq!(s.len(), 3);
+        assert_eq!(s.as_str(), "abc");
+    }
+
+    #[ruby_test]
+    fn test_insert() {
+        let mut s = super::String::from_str("abc");
+        s.insert(0, 'd');
+        assert_eq!(s.len(), 4);
+        assert_eq!(s.as_str(), "dabc");
+    }
+
+    #[ruby_test]
+    fn test_insert_str() {
+        let mut s = super::String::from_str("abc");
+        s.insert_str(0, "d");
+        assert_eq!(s.len(), 4);
+        assert_eq!(s.as_str(), "dabc");
+    }
+
+    #[ruby_test]
+    fn test_remove() {
+        let mut s = super::String::from_str("abc");
+        assert_eq!(s.remove(0), 'a');
+        assert_eq!(s.len(), 2);
+        assert_eq!(s.as_str(), "bc");
+    }
+
+    #[ruby_test]
+    fn test_pop() {
+        let mut s = super::String::from_str("abc");
+        assert_eq!(s.pop(), Some('c'));
+        assert_eq!(s.len(), 2);
+        assert_eq!(s.as_str(), "ab");
+    }
+
+    #[ruby_test]
+    fn test_drop() {
+        let mut s = super::String::from_str("abc");
+        s.push('d');
+        assert_eq!(s.len(), 4);
+        assert_eq!(s.as_str(), "abcd");
+        drop(s);
+    }
+
+    #[ruby_test]
+    fn test_into_rstring() {
+        let s = super::String::from_str("abc");
+        let rstring = s.into_rstring();
+        assert_eq!(rstring.to_string().unwrap(), "abc");
     }
 }
