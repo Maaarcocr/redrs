@@ -26,11 +26,11 @@ unsafe impl allocator_api2::alloc::Allocator for RubyAllocator {
     }
 }
 
-pub struct String {
+pub struct RedString {
     buf: allocator_api2::vec::Vec<u8, RubyAllocator>,
 }
 
-impl String {
+impl RedString {
     pub fn new() -> Self {
         Self {
             buf: allocator_api2::vec::Vec::new_in(RubyAllocator {}),
@@ -146,7 +146,7 @@ impl String {
     }
 }
 
-impl Deref for String {
+impl Deref for RedString {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -154,13 +154,13 @@ impl Deref for String {
     }
 }
 
-impl DerefMut for String {
+impl DerefMut for RedString {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_str()
     }
 }
 
-impl std::fmt::Write for String {
+impl std::fmt::Write for RedString {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
         self.push_str(s);
         Ok(())
@@ -173,14 +173,14 @@ mod tests {
 
     #[ruby_test]
     fn test_empty() {
-        let s = super::String::new();
+        let s = super::RedString::new();
         assert_eq!(s.len(), 0);
         assert_eq!(s.as_str(), "");
     }
 
     #[ruby_test]
     fn test_push() {
-        let mut s = super::String::new();
+        let mut s = super::RedString::new();
         s.push('a');
         s.push('b');
         s.push('c');
@@ -190,7 +190,7 @@ mod tests {
 
     #[ruby_test]
     fn test_push_str() {
-        let mut s = super::String::new();
+        let mut s = super::RedString::new();
         s.push_str("abc");
         assert_eq!(s.len(), 3);
         assert_eq!(s.as_str(), "abc");
@@ -198,7 +198,7 @@ mod tests {
 
     #[ruby_test]
     fn test_insert() {
-        let mut s = super::String::from_str("abc");
+        let mut s = super::RedString::from_str("abc");
         s.insert(0, 'd');
         assert_eq!(s.len(), 4);
         assert_eq!(s.as_str(), "dabc");
@@ -206,7 +206,7 @@ mod tests {
 
     #[ruby_test]
     fn test_insert_str() {
-        let mut s = super::String::from_str("abc");
+        let mut s = super::RedString::from_str("abc");
         s.insert_str(0, "d");
         assert_eq!(s.len(), 4);
         assert_eq!(s.as_str(), "dabc");
@@ -214,7 +214,7 @@ mod tests {
 
     #[ruby_test]
     fn test_remove() {
-        let mut s = super::String::from_str("abc");
+        let mut s = super::RedString::from_str("abc");
         assert_eq!(s.remove(0), 'a');
         assert_eq!(s.len(), 2);
         assert_eq!(s.as_str(), "bc");
@@ -222,7 +222,7 @@ mod tests {
 
     #[ruby_test]
     fn test_pop() {
-        let mut s = super::String::from_str("abc");
+        let mut s = super::RedString::from_str("abc");
         assert_eq!(s.pop(), Some('c'));
         assert_eq!(s.len(), 2);
         assert_eq!(s.as_str(), "ab");
@@ -230,7 +230,7 @@ mod tests {
 
     #[ruby_test]
     fn test_drop() {
-        let mut s = super::String::from_str("abc");
+        let mut s = super::RedString::from_str("abc");
         s.push('d');
         assert_eq!(s.len(), 4);
         assert_eq!(s.as_str(), "abcd");
@@ -239,7 +239,7 @@ mod tests {
 
     #[ruby_test]
     fn test_write() {
-        let mut s = super::String::new();
+        let mut s = super::RedString::new();
         std::fmt::Write::write_str(&mut s, "abc").unwrap();
         assert_eq!(s.len(), 3);
         assert_eq!(s.as_str(), "abc");
@@ -247,7 +247,7 @@ mod tests {
 
     #[ruby_test]
     fn test_into_rstring() {
-        let s = super::String::from_str("abc");
+        let s = super::RedString::from_str("abc");
         let rstring = s.into_rstring();
         assert_eq!(rstring.to_string().unwrap(), "abc");
     }
